@@ -51,6 +51,14 @@ func getCsvAttributes(structPointer interface{}) (csvAttrs map[string]csvAttribu
 			continue
 		}
 
+		if !field.IsExported() {
+			return csvAttrs, CsvTagDefError{
+				CsvTag:    tag,
+				FieldName: field.Name,
+				Err:       fmt.Errorf("csv tags may not be set on unexported fields"),
+			}
+		}
+
 		fieldAttrs, err := getAttributesFromTag(tag)
 		if err != nil {
 			return csvAttrs, CsvTagDefError{
