@@ -268,6 +268,16 @@ func (p *Parser) setFieldValue(structPointer interface{}, fieldName string, valu
 			}
 		}
 		field.SetInt(int64(intValue))
+	case uint, uint8, uint16, uint32, uint64:
+		uintValue, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return SetValueError{
+				Value:     value,
+				FieldName: fieldName,
+				Err:       err,
+			}
+		}
+		field.SetUint(uintValue)
 	case float32:
 		floatValue, err := strconv.ParseFloat(value, 32)
 		if err != nil {

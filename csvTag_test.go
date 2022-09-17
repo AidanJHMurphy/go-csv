@@ -1,7 +1,9 @@
 package csv
 
 import (
+	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -15,14 +17,14 @@ OtherString,14, f8jf8j,48484848`
 asd5g4lkeim	"second	Data"	a5g5on	47	afd&&5h67af	4g5sbg254
 asdlk654eim	thirdData	a$&*^on	48	a$%&*af	4g5254654`
 
-	typesTestData = `string,int,int8,int16,int32,int64,float32,float64,customField
-blah,1,8,16,32,64,12.8,25.6,value`
+	typesTestData = `string,int,int8,int16,int32,int64,uint,uint8,uint16,uint32,uint64,float32,float64,customField
+blah,-1,-8,-16,-32,-64,1,8,16,32,64,12.8,25.6,value`
 )
 
 var (
 	headerTestResults = []headerTest{
-		{Field1: "String", Field2: 12, Field3: 123456},
-		{Field1: "OtherString", Field2: 14, Field3: 48484848},
+		{IgnoredField: 0, Field1: "String", Field2: 12, Field3: 123456},
+		{IgnoredField: 1, Field1: "OtherString", Field2: 14, Field3: 48484848},
 	}
 	indexTestResults = []indexTest{
 		{Field1: "firstData", Field2: 46},
@@ -32,11 +34,16 @@ var (
 	typesTestResults = []dataTypesTest{
 		{
 			String:      "blah",
-			Int:         1,
-			Int8:        int8(8),
-			Int16:       int16(16),
-			Int32:       int32(32),
-			Int64:       int64(64),
+			Int:         int(-1),
+			Int8:        int8(-8),
+			Int16:       int16(-16),
+			Int32:       int32(-32),
+			Int64:       int64(-64),
+			UInt:        uint(1),
+			UInt8:       uint8(8),
+			UInt16:      uint16(16),
+			UInt32:      uint32(32),
+			UInt64:      uint64(64),
 			Float32:     float32(12.8),
 			Float64:     float64(25.6),
 			CustomField: "VALUE!!",
@@ -63,17 +70,23 @@ type dataTypesTest struct {
 	Int16       int16   `csv:"header:int16"`
 	Int32       int32   `csv:"header:int32"`
 	Int64       int64   `csv:"header:int64"`
+	UInt        uint    `csv:"header:uint"`
+	UInt8       uint8   `csv:"header:uint8"`
+	UInt16      uint16  `csv:"header:uint16"`
+	UInt32      uint32  `csv:"header:uint32"`
+	UInt64      uint64  `csv:"header:uint64"`
 	Float32     float32 `csv:"header:float32"`
 	Float64     float64 `csv:"header:float64"`
 	CustomField string  `csv:"header:customField;useCustomSetter"`
 }
 
 func (dtt *dataTypesTest) CustomSetter(fieldName string, value string) (err error) {
-	if fieldName == "customField" {
+	if fieldName == "CustomField" {
 		dtt.CustomField = strings.ToUpper(value) + "!!"
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("unexpected call to CustomSetter")
 }
 
 func TestCsvWithHeaders(t *testing.T) {
@@ -98,18 +111,14 @@ func TestCsvWithHeaders(t *testing.T) {
 			break
 		}
 
-		if data.IgnoredField != i {
-			t.Errorf("expected IgnoredField to be %d but got %d", i, data.IgnoredField)
-		}
+		for fieldIndex := 0; fieldIndex < reflect.ValueOf(data).NumField(); fieldIndex++ {
+			fieldName := reflect.ValueOf(data).Type().Field(fieldIndex).Name
+			dataValue := reflect.ValueOf(data).FieldByName(fieldName)
+			expectedValue := reflect.ValueOf(headerTestResults[i]).FieldByName(fieldName)
 
-		if data.Field1 != headerTestResults[i].Field1 {
-			t.Errorf("improperly parsed Field1 data from csv with header. Got '%v' but expected '%v'", data.Field1, headerTestResults[i].Field1)
-		}
-		if data.Field2 != headerTestResults[i].Field2 {
-			t.Errorf("improperly parsed Field2 data from csv with header. Got '%v' but expected '%v'", data.Field2, headerTestResults[i].Field2)
-		}
-		if data.Field3 != headerTestResults[i].Field3 {
-			t.Errorf("improperly parsed Field3 data from csv with header. Got '%v' but expected '%v'", data.Field3, headerTestResults[i].Field3)
+			if dataValue.Interface() != expectedValue.Interface() {
+				t.Errorf("improperly parsed %s data from csv with header. Got '%v' but expected '%v'", fieldName, dataValue, expectedValue)
+			}
 		}
 	}
 }
@@ -131,15 +140,18 @@ func TestCsvWithoutHeaders(t *testing.T) {
 		}
 
 		if err != nil {
-			t.Errorf("encountered error parsing csv with header: %v", err)
+			t.Errorf("encountered error parsing csv without header: %v", err)
 			break
 		}
 
-		if data.Field1 != indexTestResults[i].Field1 {
-			t.Errorf("improperly parsed Field1 data from csv without header. Got '%v' but expected '%v'", data.Field1, indexTestResults[i].Field1)
-		}
-		if data.Field2 != indexTestResults[i].Field2 {
-			t.Errorf("improperly parsed Field2 data from csv without header. Got '%v' but expected '%v'", data.Field2, indexTestResults[i].Field2)
+		for fieldIndex := 0; fieldIndex < reflect.ValueOf(data).NumField(); fieldIndex++ {
+			fieldName := reflect.ValueOf(data).Type().Field(fieldIndex).Name
+			dataValue := reflect.ValueOf(data).FieldByName(fieldName)
+			expectedValue := reflect.ValueOf(indexTestResults[i]).FieldByName(fieldName)
+
+			if dataValue.Interface() != expectedValue.Interface() {
+				t.Errorf("improperly parsed %s data from csv with header. Got '%v' but expected '%v'", fieldName, dataValue, expectedValue)
+			}
 		}
 	}
 }
@@ -165,28 +177,14 @@ func TestCsvDataTypes(t *testing.T) {
 			break
 		}
 
-		if data.String != typesTestResults[i].String {
-			t.Errorf("improperly parsed stringData data from csv with header. Got '%v' but expected '%v'", data.String, typesTestResults[i].String)
-		}
+		for fieldIndex := 0; fieldIndex < reflect.ValueOf(data).NumField(); fieldIndex++ {
+			fieldName := reflect.ValueOf(data).Type().Field(fieldIndex).Name
+			dataValue := reflect.ValueOf(data).FieldByName(fieldName)
+			expectedValue := reflect.ValueOf(typesTestResults[i]).FieldByName(fieldName)
 
-		if data.Int != typesTestResults[i].Int {
-			t.Errorf("improperly parsed intData data from csv with header. Got '%v' but expected '%v'", data.Int, typesTestResults[i].Int)
-		}
-
-		if data.Int8 != typesTestResults[i].Int8 {
-			t.Errorf("improperly parsed int8Data data from csv with header. Got '%v' but expected '%v'", data.Int8, typesTestResults[i].Int8)
-		}
-
-		if data.Int16 != typesTestResults[i].Int16 {
-			t.Errorf("improperly parsed int16Data data from csv with header. Got '%v' but expected '%v'", data.Int16, typesTestResults[i].Int16)
-		}
-
-		if data.Int32 != typesTestResults[i].Int32 {
-			t.Errorf("improperly parsed int32Data data from csv with header. Got '%v' but expected '%v'", data.Int32, typesTestResults[i].Int32)
-		}
-
-		if data.Int64 != typesTestResults[i].Int64 {
-			t.Errorf("improperly parsed int64Data data from csv with header. Got '%v' but expected '%v'", data.Int64, typesTestResults[i].Int64)
+			if dataValue.Interface() != expectedValue.Interface() {
+				t.Errorf("improperly parsed %s data from csv with header. Got '%v' but expected '%v'", fieldName, dataValue, expectedValue)
+			}
 		}
 	}
 }
