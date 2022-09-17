@@ -31,7 +31,7 @@ type csvAttributes struct {
 
 func isValidDataType(i interface{}) bool {
 	switch i.(type) {
-	case string, int, int8, int16, int32, int64:
+	case string, int, int8, int16, int32, int64, float32, float64:
 		return true
 	}
 	return false
@@ -268,6 +268,26 @@ func (p *Parser) setFieldValue(structPointer interface{}, fieldName string, valu
 			}
 		}
 		field.SetInt(int64(intValue))
+	case float32:
+		floatValue, err := strconv.ParseFloat(value, 32)
+		if err != nil {
+			return SetValueError{
+				Value:     value,
+				FieldName: fieldName,
+				Err:       err,
+			}
+		}
+		field.SetFloat(floatValue)
+	case float64:
+		floatValue, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return SetValueError{
+				Value:     value,
+				FieldName: fieldName,
+				Err:       err,
+			}
+		}
+		field.SetFloat(floatValue)
 	default:
 		return SetValueError{
 			Value:     value,
