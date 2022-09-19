@@ -78,7 +78,7 @@ type improperlyAppliedTag struct {
 ```
 
 
-CSV tags must defined either the header, or the index attribute to be valid. The following struct definition is invalid:
+CSV tags must define either the header, or the index attribute to be valid. The following struct definition is invalid:
 
 ```
 type improperlyDefinedTag struct {
