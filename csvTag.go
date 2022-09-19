@@ -19,6 +19,15 @@ const (
 	useCustomSetterAttr = "useCustomSetter"
 )
 
+var (
+	ErrorMissingCustomSetter = fmt.Errorf("cannot use custom data type without implementing CustomSetter interface")
+	ErrorUnsupportedDataType = fmt.Errorf("must implement CustomSetter interface when using unsupported data types")
+	ErrorInvalidIndex        = fmt.Errorf("index must be a non negative integer")
+	ErrorMalformedCsvTag     = fmt.Errorf("you need to specify either the header or index")
+	ErrorUnexportedField     = fmt.Errorf("csv tags may not be set on unexported fields")
+	ErrorFieldNotFound       = fmt.Errorf("field not found in header")
+)
+
 type CustomSetter interface {
 	CustomSetter(fieldName string, value string) (err error)
 }
@@ -31,7 +40,7 @@ type csvAttributes struct {
 
 func isValidDataType(i interface{}) bool {
 	switch i.(type) {
-	case string, int, int8, int16, int32, int64:
+	case string, int, int8, int16, int32, int64, float32, float64:
 		return true
 	}
 	return false
@@ -51,6 +60,14 @@ func getCsvAttributes(structPointer interface{}) (csvAttrs map[string]csvAttribu
 			continue
 		}
 
+		if !field.IsExported() {
+			return csvAttrs, CsvTagDefError{
+				CsvTag:    tag,
+				FieldName: field.Name,
+				Err:       ErrorUnexportedField,
+			}
+		}
+
 		fieldAttrs, err := getAttributesFromTag(tag)
 		if err != nil {
 			return csvAttrs, CsvTagDefError{
@@ -64,7 +81,7 @@ func getCsvAttributes(structPointer interface{}) (csvAttrs map[string]csvAttribu
 			return csvAttrs, CsvTagDefError{
 				CsvTag:    tag,
 				FieldName: field.Name,
-				Err:       fmt.Errorf("cannot use custom data type without implementing CustomSetter interface"),
+				Err:       ErrorMissingCustomSetter,
 			}
 		}
 
@@ -72,7 +89,7 @@ func getCsvAttributes(structPointer interface{}) (csvAttrs map[string]csvAttribu
 			return csvAttrs, CsvTagDefError{
 				CsvTag:    tag,
 				FieldName: field.Name,
-				Err:       fmt.Errorf("must implement CustomSetter interface when using unsupported data types"),
+				Err:       ErrorUnsupportedDataType,
 			}
 		}
 
@@ -103,10 +120,10 @@ func getAttributesFromTag(tag string) (attrs csvAttributes, err error) {
 			hasIndex = true
 			attrs.columnIndex, err = strconv.Atoi(value)
 			if err != nil {
-				return attrs, err
+				return attrs, ErrorInvalidIndex
 			}
 			if attrs.columnIndex < 0 {
-				return attrs, fmt.Errorf("index must be a non negative integer")
+				return attrs, ErrorInvalidIndex
 			}
 		case useCustomSetterAttr:
 			attrs.useCustomSetter = true
@@ -114,7 +131,7 @@ func getAttributesFromTag(tag string) (attrs csvAttributes, err error) {
 	}
 
 	if !hasHeader && !hasIndex {
-		return attrs, fmt.Errorf("you need to specify either the header or index")
+		return attrs, ErrorMalformedCsvTag
 	}
 
 	return attrs, nil
@@ -185,6 +202,7 @@ func (p *Parser) ParseHeader(structPointer interface{}) (err error) {
 			return FieldNotFoundError{
 				FieldName:  fieldName,
 				HeaderName: csvAttrs.headerName,
+				Err:        ErrorFieldNotFound,
 			}
 		}
 	}
@@ -260,11 +278,41 @@ func (p *Parser) setFieldValue(structPointer interface{}, fieldName string, valu
 			}
 		}
 		field.SetInt(int64(intValue))
+	case uint, uint8, uint16, uint32, uint64:
+		uintValue, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return SetValueError{
+				Value:     value,
+				FieldName: fieldName,
+				Err:       err,
+			}
+		}
+		field.SetUint(uintValue)
+	case float32:
+		floatValue, err := strconv.ParseFloat(value, 32)
+		if err != nil {
+			return SetValueError{
+				Value:     value,
+				FieldName: fieldName,
+				Err:       err,
+			}
+		}
+		field.SetFloat(floatValue)
+	case float64:
+		floatValue, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return SetValueError{
+				Value:     value,
+				FieldName: fieldName,
+				Err:       err,
+			}
+		}
+		field.SetFloat(floatValue)
 	default:
 		return SetValueError{
 			Value:     value,
 			FieldName: fieldName,
-			Err:       fmt.Errorf("unsupported type"),
+			Err:       ErrorUnsupportedDataType,
 		}
 	}
 
@@ -286,11 +334,14 @@ func (e CsvTagDefError) Unwrap() error { return e.Err }
 type FieldNotFoundError struct {
 	FieldName  string
 	HeaderName string
+	Err        error
 }
 
 func (e FieldNotFoundError) Error() string {
 	return fmt.Sprintf("field %s not found in header with label %s", e.FieldName, e.HeaderName)
 }
+
+func (e FieldNotFoundError) Unwrap() error { return e.Err }
 
 type SetValueError struct {
 	Value     string
