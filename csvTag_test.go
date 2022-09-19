@@ -18,8 +18,8 @@ OtherString,14, f8jf8j,48484848`
 asd5g4lkeim	"second	Data"	a5g5on	47	afd&&5h67af	4g5sbg254
 asdlk654eim	thirdData	a$&*^on	48	a$%&*af	4g5254654`
 
-	typesTestData = `string,boolean,int,int8,int16,int32,int64,uint,uint8,uint16,uint32,uint64,float32,float64,customField
-blah,true,-1,-8,-16,-32,-64,1,8,16,32,64,12.8,25.6,value`
+	typesTestData = `string,boolean,int,int8,int16,int32,int64,uint,uint8,uint16,uint32,uint64,float32,float64,complex64,complex128,customField
+blah,true,-1,-8,-16,-32,-64,1,8,16,32,64,12.8,25.6,10+512i,10+1024i,value`
 )
 
 var (
@@ -48,6 +48,8 @@ var (
 			UInt64:      uint64(64),
 			Float32:     float32(12.8),
 			Float64:     float64(25.6),
+			Complex64:   complex64(10 + 512i),
+			Complex128:  complex128(10 + 1024i),
 			CustomField: "VALUE!!",
 		},
 	}
@@ -66,21 +68,23 @@ type indexTest struct {
 }
 
 type dataTypesTest struct {
-	String      string  `csv:"header:string"`
-	Boolean     bool    `csv:"header:boolean"`
-	Int         int     `csv:"header:int"`
-	Int8        int8    `csv:"header:int8"`
-	Int16       int16   `csv:"header:int16"`
-	Int32       int32   `csv:"header:int32"`
-	Int64       int64   `csv:"header:int64"`
-	UInt        uint    `csv:"header:uint"`
-	UInt8       uint8   `csv:"header:uint8"`
-	UInt16      uint16  `csv:"header:uint16"`
-	UInt32      uint32  `csv:"header:uint32"`
-	UInt64      uint64  `csv:"header:uint64"`
-	Float32     float32 `csv:"header:float32"`
-	Float64     float64 `csv:"header:float64"`
-	CustomField string  `csv:"header:customField;useCustomSetter"`
+	String      string     `csv:"header:string"`
+	Boolean     bool       `csv:"header:boolean"`
+	Int         int        `csv:"header:int"`
+	Int8        int8       `csv:"header:int8"`
+	Int16       int16      `csv:"header:int16"`
+	Int32       int32      `csv:"header:int32"`
+	Int64       int64      `csv:"header:int64"`
+	UInt        uint       `csv:"header:uint"`
+	UInt8       uint8      `csv:"header:uint8"`
+	UInt16      uint16     `csv:"header:uint16"`
+	UInt32      uint32     `csv:"header:uint32"`
+	UInt64      uint64     `csv:"header:uint64"`
+	Float32     float32    `csv:"header:float32"`
+	Float64     float64    `csv:"header:float64"`
+	Complex64   complex64  `csv:"header:complex64"`
+	Complex128  complex128 `csv:"header:complex128"`
+	CustomField string     `csv:"header:customField;useCustomSetter"`
 }
 
 func (dtt *dataTypesTest) CustomSetter(fieldName string, value string) (err error) {

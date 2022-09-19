@@ -318,6 +318,27 @@ func (p *Parser) setFieldValue(structPointer interface{}, fieldName string, valu
 			}
 		}
 		field.SetFloat(floatValue)
+
+	case complex64:
+		cmplxValue, err := strconv.ParseComplex(value, 64)
+		if err != nil {
+			return SetValueError{
+				Value:     value,
+				FieldName: fieldName,
+				Err:       err,
+			}
+		}
+		field.SetComplex(cmplxValue)
+	case complex128:
+		cmplxValue, err := strconv.ParseComplex(value, 128)
+		if err != nil {
+			return SetValueError{
+				Value:     value,
+				FieldName: fieldName,
+				Err:       err,
+			}
+		}
+		field.SetComplex(cmplxValue)
 	default:
 		return SetValueError{
 			Value:     value,
