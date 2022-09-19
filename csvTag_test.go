@@ -269,8 +269,7 @@ func TestInvalidIndexError2(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected to encounter Invalid Index error, but got none")
 	}
-	expectedErr := ErrorUnsupportedDataType
-	if !errors.As(err, &expectedErr) {
+	if !errors.Is(err, ErrorInvalidIndex) {
 		t.Errorf("expected to encounter Invalid Index error, but got %v", err)
 	}
 }
