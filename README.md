@@ -1,6 +1,8 @@
 # go-csv
 This project defines a csv struct decorator tag, and wraper for the base csv package that can understand and use the tag in order to more easily parse csv data.
 
+To use, import this module into your code with "github.com/AidanJHMurphy/go-csv"
+
 ## How to decorate a struct with the csv tag
 
 If your csv file uses a header, define the mapping with the header attribute. For example, given the following struct definition:
