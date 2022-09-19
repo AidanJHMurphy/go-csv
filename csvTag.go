@@ -143,7 +143,9 @@ type Parser struct {
 }
 
 type ParserOptions struct {
-	Delimiter rune
+	Delimiter   rune
+	CommentChar rune
+	ReuseRecord bool
 }
 
 func legalDelimiter(d rune) bool {
@@ -168,6 +170,10 @@ func NewParser(file io.Reader, options ParserOptions) (p Parser) {
 	if legalDelimiter(options.Delimiter) {
 		p.reader.Comma = options.Delimiter
 	}
+
+	p.reader.Comment = options.CommentChar
+
+	p.reader.ReuseRecord = options.ReuseRecord
 
 	return p
 }
