@@ -25,6 +25,7 @@ var (
 	ErrorInvalidIndex        = fmt.Errorf("index must be a non negative integer")
 	ErrorMalformedCsvTag     = fmt.Errorf("you need to specify either the header or index")
 	ErrorUnexportedField     = fmt.Errorf("csv tags may not be set on unexported fields")
+	ErrorFieldNotFound       = fmt.Errorf("field not found in header")
 )
 
 type CustomSetter interface {
@@ -201,6 +202,7 @@ func (p *Parser) ParseHeader(structPointer interface{}) (err error) {
 			return FieldNotFoundError{
 				FieldName:  fieldName,
 				HeaderName: csvAttrs.headerName,
+				Err:        ErrorFieldNotFound,
 			}
 		}
 	}
@@ -332,11 +334,14 @@ func (e CsvTagDefError) Unwrap() error { return e.Err }
 type FieldNotFoundError struct {
 	FieldName  string
 	HeaderName string
+	Err        error
 }
 
 func (e FieldNotFoundError) Error() string {
 	return fmt.Sprintf("field %s not found in header with label %s", e.FieldName, e.HeaderName)
 }
+
+func (e FieldNotFoundError) Unwrap() error { return e.Err }
 
 type SetValueError struct {
 	Value     string

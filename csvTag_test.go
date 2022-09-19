@@ -1,6 +1,7 @@
 package csv
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -189,10 +190,135 @@ func TestCsvDataTypes(t *testing.T) {
 	}
 }
 
-/*
-TODO -- add tests for the various error cases:
- - csv tag definition error
- - malformed header error
- - field not found error
- -
-*/
+type MissingCustomSetter struct {
+	CustomField string `csv:"header:field1;useCustomSetter"`
+}
+
+func TestCustomSetterInterfaceError(t *testing.T) {
+	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
+
+	err := p.ParseHeader(&MissingCustomSetter{})
+	if err == nil {
+		t.Errorf("expected to encounter Missing Custom Setter error, but got none")
+	}
+	if !errors.Is(err, ErrorMissingCustomSetter) {
+		t.Errorf("expected to encounter Missing Custom Setter error, but got %v", err)
+	}
+}
+
+type UnsupportedDataType1 struct {
+	UnsupportedField interface{} `csv:"header:field1"`
+}
+
+func TestUnsupportedDataTypeError1(t *testing.T) {
+	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
+
+	err := p.ParseHeader(&UnsupportedDataType1{})
+	if err == nil {
+		t.Errorf("expected to encounter Unsupported Data Type error, but got none")
+	}
+	if !errors.Is(err, ErrorUnsupportedDataType) {
+		t.Errorf("expected to encounter Unsupported Data Type error, but got %v", err)
+	}
+}
+
+type UnsupportedDataType2 struct {
+	UnsupportedField interface{} `csv:"header:field1"`
+}
+
+func (UnsupportedDataType2) CustomSetter(fieldName string, value string) (err error) {
+	return nil
+}
+
+func TestUnsupportedDataTypeError2(t *testing.T) {
+	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
+
+	err := p.ParseHeader(&UnsupportedDataType2{})
+	fmt.Println(err)
+	if err != nil {
+		t.Errorf("expected to not encounter an error, but got %v", err)
+	}
+}
+
+type InvalidIndex1 struct {
+	AlphaIndex string `csv:"index:a"`
+}
+
+func TestInvalidIndexError1(t *testing.T) {
+	p := NewParser(strings.NewReader(indexTestData), ParserOptions{Delimiter: '\t'})
+
+	err := p.ReadRecord(&InvalidIndex1{})
+	fmt.Println(err)
+	if err == nil {
+		t.Errorf("expected to encounter Invalid Index error, but got none")
+	}
+	if !errors.Is(err, ErrorInvalidIndex) {
+		t.Errorf("expected to encounter Invalid Index error, but got %v", err)
+	}
+}
+
+type InvalidIndex2 struct {
+	AlphaIndex string `csv:"index:-1"`
+}
+
+func TestInvalidIndexError2(t *testing.T) {
+	p := NewParser(strings.NewReader(indexTestData), ParserOptions{Delimiter: '\t'})
+
+	err := p.ReadRecord(&InvalidIndex2{})
+	fmt.Println(err)
+	if err == nil {
+		t.Errorf("expected to encounter Invalid Index error, but got none")
+	}
+	expectedErr := ErrorUnsupportedDataType
+	if !errors.As(err, &expectedErr) {
+		t.Errorf("expected to encounter Invalid Index error, but got %v", err)
+	}
+}
+
+type MalformedTag struct {
+	BadDef string `csv:"Header:field1"`
+}
+
+func TestMalformedTagError(t *testing.T) {
+	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
+
+	err := p.ParseHeader(&MalformedTag{})
+	if err == nil {
+		t.Errorf("expected to encounter Malformed Tag error, but got none")
+	}
+	if !errors.Is(err, ErrorMalformedCsvTag) {
+		t.Errorf("expected to encounter Malformed Tag error, but got %v", err)
+	}
+}
+
+type UnexportedField struct {
+	unexportedField string `csv:"header:field1"`
+}
+
+func TestUnexportedFieldError(t *testing.T) {
+	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
+
+	err := p.ParseHeader(&UnexportedField{})
+	if err == nil {
+		t.Errorf("expected to encounter Unexported Field error, but got none")
+	}
+	if !errors.Is(err, ErrorUnexportedField) {
+		t.Errorf("expected to encounter Unexported Field error, but got %v", err)
+	}
+}
+
+type FieldNotFound struct {
+	Field1 string `csv:"header:thiswontbefound"`
+}
+
+func TestFieldNotFoundError(t *testing.T) {
+	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
+
+	err := p.ParseHeader(&FieldNotFound{})
+	if err == nil {
+		t.Errorf("expected to encounter Field Not Found error, but got none")
+	}
+	if !errors.Is(err, ErrorFieldNotFound) {
+		t.Errorf("expected to encounter Field Not Found error, but got %v", err)
+	}
+}
