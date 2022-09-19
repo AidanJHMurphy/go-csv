@@ -19,6 +19,14 @@ const (
 	useCustomSetterAttr = "useCustomSetter"
 )
 
+var (
+	ErrorMissingCustomSetter = fmt.Errorf("cannot use custom data type without implementing CustomSetter interface")
+	ErrorUnsupportedDataType = fmt.Errorf("must implement CustomSetter interface when using unsupported data types")
+	ErrorInvalidIndex        = fmt.Errorf("index must be a non negative integer")
+	ErrorMalformedCsvTag     = fmt.Errorf("you need to specify either the header or index")
+	ErrorUnexportedField     = fmt.Errorf("csv tags may not be set on unexported fields")
+)
+
 type CustomSetter interface {
 	CustomSetter(fieldName string, value string) (err error)
 }
@@ -55,7 +63,7 @@ func getCsvAttributes(structPointer interface{}) (csvAttrs map[string]csvAttribu
 			return csvAttrs, CsvTagDefError{
 				CsvTag:    tag,
 				FieldName: field.Name,
-				Err:       fmt.Errorf("csv tags may not be set on unexported fields"),
+				Err:       ErrorUnexportedField,
 			}
 		}
 
@@ -72,7 +80,7 @@ func getCsvAttributes(structPointer interface{}) (csvAttrs map[string]csvAttribu
 			return csvAttrs, CsvTagDefError{
 				CsvTag:    tag,
 				FieldName: field.Name,
-				Err:       fmt.Errorf("cannot use custom data type without implementing CustomSetter interface"),
+				Err:       ErrorMissingCustomSetter,
 			}
 		}
 
@@ -80,7 +88,7 @@ func getCsvAttributes(structPointer interface{}) (csvAttrs map[string]csvAttribu
 			return csvAttrs, CsvTagDefError{
 				CsvTag:    tag,
 				FieldName: field.Name,
-				Err:       fmt.Errorf("must implement CustomSetter interface when using unsupported data types"),
+				Err:       ErrorUnsupportedDataType,
 			}
 		}
 
@@ -111,10 +119,10 @@ func getAttributesFromTag(tag string) (attrs csvAttributes, err error) {
 			hasIndex = true
 			attrs.columnIndex, err = strconv.Atoi(value)
 			if err != nil {
-				return attrs, err
+				return attrs, ErrorInvalidIndex
 			}
 			if attrs.columnIndex < 0 {
-				return attrs, fmt.Errorf("index must be a non negative integer")
+				return attrs, ErrorInvalidIndex
 			}
 		case useCustomSetterAttr:
 			attrs.useCustomSetter = true
@@ -122,7 +130,7 @@ func getAttributesFromTag(tag string) (attrs csvAttributes, err error) {
 	}
 
 	if !hasHeader && !hasIndex {
-		return attrs, fmt.Errorf("you need to specify either the header or index")
+		return attrs, ErrorMalformedCsvTag
 	}
 
 	return attrs, nil
@@ -302,7 +310,7 @@ func (p *Parser) setFieldValue(structPointer interface{}, fieldName string, valu
 		return SetValueError{
 			Value:     value,
 			FieldName: fieldName,
-			Err:       fmt.Errorf("unsupported type"),
+			Err:       ErrorUnsupportedDataType,
 		}
 	}
 
