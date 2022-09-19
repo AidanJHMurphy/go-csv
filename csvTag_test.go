@@ -196,14 +196,14 @@ func TestCsvDataTypes(t *testing.T) {
 	}
 }
 
-type MissingCustomSetter struct {
+type missingCustomSetter struct {
 	CustomField string `csv:"header:field1;useCustomSetter"`
 }
 
 func TestCustomSetterInterfaceError(t *testing.T) {
 	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
 
-	err := p.ParseHeader(&MissingCustomSetter{})
+	err := p.ParseHeader(&missingCustomSetter{})
 	if err == nil {
 		t.Errorf("expected to encounter Missing Custom Setter error, but got none")
 	}
@@ -212,14 +212,14 @@ func TestCustomSetterInterfaceError(t *testing.T) {
 	}
 }
 
-type UnsupportedDataType1 struct {
+type unsupportedDataType1 struct {
 	UnsupportedField interface{} `csv:"header:field1"`
 }
 
 func TestUnsupportedDataTypeError1(t *testing.T) {
 	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
 
-	err := p.ParseHeader(&UnsupportedDataType1{})
+	err := p.ParseHeader(&unsupportedDataType1{})
 	if err == nil {
 		t.Errorf("expected to encounter Unsupported Data Type error, but got none")
 	}
@@ -228,32 +228,32 @@ func TestUnsupportedDataTypeError1(t *testing.T) {
 	}
 }
 
-type UnsupportedDataType2 struct {
+type unsupportedDataType2 struct {
 	UnsupportedField interface{} `csv:"header:field1"`
 }
 
-func (UnsupportedDataType2) CustomSetter(fieldName string, value string) (err error) {
+func (unsupportedDataType2) CustomSetter(fieldName string, value string) (err error) {
 	return nil
 }
 
 func TestUnsupportedDataTypeError2(t *testing.T) {
 	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
 
-	err := p.ParseHeader(&UnsupportedDataType2{})
+	err := p.ParseHeader(&unsupportedDataType2{})
 	fmt.Println(err)
 	if err != nil {
 		t.Errorf("expected to not encounter an error, but got %v", err)
 	}
 }
 
-type InvalidIndex1 struct {
+type invalidIndex1 struct {
 	AlphaIndex string `csv:"index:a"`
 }
 
 func TestInvalidIndexError1(t *testing.T) {
 	p := NewParser(strings.NewReader(indexTestData), ParserOptions{Delimiter: '\t'})
 
-	err := p.ReadRecord(&InvalidIndex1{})
+	err := p.ReadRecord(&invalidIndex1{})
 	fmt.Println(err)
 	if err == nil {
 		t.Errorf("expected to encounter Invalid Index error, but got none")
@@ -263,14 +263,14 @@ func TestInvalidIndexError1(t *testing.T) {
 	}
 }
 
-type InvalidIndex2 struct {
+type invalidIndex2 struct {
 	AlphaIndex string `csv:"index:-1"`
 }
 
 func TestInvalidIndexError2(t *testing.T) {
 	p := NewParser(strings.NewReader(indexTestData), ParserOptions{Delimiter: '\t'})
 
-	err := p.ReadRecord(&InvalidIndex2{})
+	err := p.ReadRecord(&invalidIndex2{})
 	fmt.Println(err)
 	if err == nil {
 		t.Errorf("expected to encounter Invalid Index error, but got none")
@@ -280,14 +280,14 @@ func TestInvalidIndexError2(t *testing.T) {
 	}
 }
 
-type MalformedTag struct {
+type malformedTag struct {
 	BadDef string `csv:"Header:field1"`
 }
 
 func TestMalformedTagError(t *testing.T) {
 	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
 
-	err := p.ParseHeader(&MalformedTag{})
+	err := p.ParseHeader(&malformedTag{})
 	if err == nil {
 		t.Errorf("expected to encounter Malformed Tag error, but got none")
 	}
@@ -296,14 +296,14 @@ func TestMalformedTagError(t *testing.T) {
 	}
 }
 
-type UnexportedField struct {
+type unexportedField struct {
 	unexportedField string `csv:"header:field1"`
 }
 
 func TestUnexportedFieldError(t *testing.T) {
 	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
 
-	err := p.ParseHeader(&UnexportedField{})
+	err := p.ParseHeader(&unexportedField{})
 	if err == nil {
 		t.Errorf("expected to encounter Unexported Field error, but got none")
 	}
@@ -312,14 +312,14 @@ func TestUnexportedFieldError(t *testing.T) {
 	}
 }
 
-type FieldNotFound struct {
+type fieldNotFound struct {
 	Field1 string `csv:"header:thiswontbefound"`
 }
 
 func TestFieldNotFoundError(t *testing.T) {
 	p := NewParser(strings.NewReader(headerTestData), ParserOptions{})
 
-	err := p.ParseHeader(&FieldNotFound{})
+	err := p.ParseHeader(&fieldNotFound{})
 	if err == nil {
 		t.Errorf("expected to encounter Field Not Found error, but got none")
 	}
