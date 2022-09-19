@@ -18,8 +18,8 @@ OtherString,14, f8jf8j,48484848`
 asd5g4lkeim	"second	Data"	a5g5on	47	afd&&5h67af	4g5sbg254
 asdlk654eim	thirdData	a$&*^on	48	a$%&*af	4g5254654`
 
-	typesTestData = `string,int,int8,int16,int32,int64,uint,uint8,uint16,uint32,uint64,float32,float64,customField
-blah,-1,-8,-16,-32,-64,1,8,16,32,64,12.8,25.6,value`
+	typesTestData = `string,boolean,int,int8,int16,int32,int64,uint,uint8,uint16,uint32,uint64,float32,float64,customField
+blah,true,-1,-8,-16,-32,-64,1,8,16,32,64,12.8,25.6,value`
 )
 
 var (
@@ -35,6 +35,7 @@ var (
 	typesTestResults = []dataTypesTest{
 		{
 			String:      "blah",
+			Boolean:     true,
 			Int:         int(-1),
 			Int8:        int8(-8),
 			Int16:       int16(-16),
@@ -66,6 +67,7 @@ type indexTest struct {
 
 type dataTypesTest struct {
 	String      string  `csv:"header:string"`
+	Boolean     bool    `csv:"header:boolean"`
 	Int         int     `csv:"header:int"`
 	Int8        int8    `csv:"header:int8"`
 	Int16       int16   `csv:"header:int16"`

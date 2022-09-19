@@ -268,6 +268,16 @@ func (p *Parser) setFieldValue(structPointer interface{}, fieldName string, valu
 	switch field.Interface().(type) {
 	case string:
 		field.SetString(value)
+	case bool:
+		boolValue, err := strconv.ParseBool(value)
+		if err != nil {
+			return SetValueError{
+				Value:     value,
+				FieldName: fieldName,
+				Err:       err,
+			}
+		}
+		field.SetBool(boolValue)
 	case int, int8, int16, int32, int64:
 		intValue, err := strconv.Atoi(value)
 		if err != nil {
