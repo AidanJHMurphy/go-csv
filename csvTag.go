@@ -40,7 +40,7 @@ type csvAttributes struct {
 
 func isValidDataType(i interface{}) bool {
 	switch i.(type) {
-	case string, int, int8, int16, int32, int64, float32, float64:
+	case string, bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, complex64, complex128:
 		return true
 	}
 	return false
@@ -143,7 +143,9 @@ type Parser struct {
 }
 
 type ParserOptions struct {
-	Delimiter rune
+	Delimiter   rune
+	CommentChar rune
+	ReuseRecord bool
 }
 
 func legalDelimiter(d rune) bool {
@@ -160,6 +162,8 @@ func legalDelimiter(d rune) bool {
 	return true
 }
 
+// NewParser creates a new csv parser for the provided file that supports the csv struct decorator tag.
+// Use ParserOptions to specify any desired changed from the default behavior as defined in the standard csv parser library.
 func NewParser(file io.Reader, options ParserOptions) (p Parser) {
 	p.reader = csv.NewReader(file)
 	p.csvAttrs = make(map[string]csvAttributes)
@@ -169,9 +173,15 @@ func NewParser(file io.Reader, options ParserOptions) (p Parser) {
 		p.reader.Comma = options.Delimiter
 	}
 
+	p.reader.Comment = options.CommentChar
+
+	p.reader.ReuseRecord = options.ReuseRecord
+
 	return p
 }
 
+// ParseHeader reads the first line of the parser's csv file and interpret's the data as headers described by the csv decorator tags defined on structPointer.
+// The structPointer should be pointer to a struct with csv decorator tags applied.
 func (p *Parser) ParseHeader(structPointer interface{}) (err error) {
 	header, err := p.reader.Read()
 
@@ -210,6 +220,8 @@ func (p *Parser) ParseHeader(structPointer interface{}) (err error) {
 	return nil
 }
 
+// ReadRecord reads the next line of the parser's csv file and interprets the data as described by the csv decorator tags defined on structPointer.
+// The structPointer should be pointer to a struct with csv decorator tags applied, and data from the appropriate column in the csv file will be set on the fields of structPointer.
 func (p *Parser) ReadRecord(structPointer interface{}) (err error) {
 
 	if len(p.csvAttrs) == 0 {
