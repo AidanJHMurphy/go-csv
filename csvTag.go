@@ -139,6 +139,7 @@ func getAttributesFromTag(tag string) (attrs csvAttributes, err error) {
 
 type Parser struct {
 	reader   *csv.Reader
+	line     int
 	csvAttrs map[string]csvAttributes
 }
 
@@ -219,6 +220,7 @@ func (p *Parser) ReadRecord(structPointer interface{}) (err error) {
 		}
 	}
 
+	p.line++
 	readRecord, err := p.reader.Read()
 
 	if err != nil {
@@ -232,6 +234,7 @@ func (p *Parser) ReadRecord(structPointer interface{}) (err error) {
 
 		if err != nil {
 			return SetValueError{
+				Line:      p.line,
 				Value:     value,
 				FieldName: fieldName,
 				Err:       err,
@@ -255,11 +258,7 @@ func (p *Parser) setFieldValue(structPointer interface{}, fieldName string, valu
 		out := method.Call(inputs)[0]
 
 		if !out.IsZero() {
-			return SetValueError{
-				Value:     value,
-				FieldName: fieldName,
-				Err:       fmt.Errorf("%v", out),
-			}
+			return fmt.Errorf("%v", out)
 		}
 
 		return nil
@@ -271,80 +270,48 @@ func (p *Parser) setFieldValue(structPointer interface{}, fieldName string, valu
 	case bool:
 		boolValue, err := strconv.ParseBool(value)
 		if err != nil {
-			return SetValueError{
-				Value:     value,
-				FieldName: fieldName,
-				Err:       err,
-			}
+			return err
 		}
 		field.SetBool(boolValue)
 	case int, int8, int16, int32, int64:
 		intValue, err := strconv.Atoi(value)
 		if err != nil {
-			return SetValueError{
-				Value:     value,
-				FieldName: fieldName,
-				Err:       err,
-			}
+			return err
 		}
 		field.SetInt(int64(intValue))
 	case uint, uint8, uint16, uint32, uint64:
 		uintValue, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
-			return SetValueError{
-				Value:     value,
-				FieldName: fieldName,
-				Err:       err,
-			}
+			return err
 		}
 		field.SetUint(uintValue)
 	case float32:
 		floatValue, err := strconv.ParseFloat(value, 32)
 		if err != nil {
-			return SetValueError{
-				Value:     value,
-				FieldName: fieldName,
-				Err:       err,
-			}
+			return err
 		}
 		field.SetFloat(floatValue)
 	case float64:
 		floatValue, err := strconv.ParseFloat(value, 64)
 		if err != nil {
-			return SetValueError{
-				Value:     value,
-				FieldName: fieldName,
-				Err:       err,
-			}
+			return err
 		}
 		field.SetFloat(floatValue)
 
 	case complex64:
 		cmplxValue, err := strconv.ParseComplex(value, 64)
 		if err != nil {
-			return SetValueError{
-				Value:     value,
-				FieldName: fieldName,
-				Err:       err,
-			}
+			return err
 		}
 		field.SetComplex(cmplxValue)
 	case complex128:
 		cmplxValue, err := strconv.ParseComplex(value, 128)
 		if err != nil {
-			return SetValueError{
-				Value:     value,
-				FieldName: fieldName,
-				Err:       err,
-			}
+			return err
 		}
 		field.SetComplex(cmplxValue)
 	default:
-		return SetValueError{
-			Value:     value,
-			FieldName: fieldName,
-			Err:       ErrorUnsupportedDataType,
-		}
+		return ErrorUnsupportedDataType
 	}
 
 	return nil
@@ -375,13 +342,14 @@ func (e FieldNotFoundError) Error() string {
 func (e FieldNotFoundError) Unwrap() error { return e.Err }
 
 type SetValueError struct {
+	Line      int
 	Value     string
 	FieldName string
 	Err       error
 }
 
 func (e SetValueError) Error() string {
-	return fmt.Sprintf("problem setting value %s on field %s: %v", e.Value, e.FieldName, e.Err)
+	return fmt.Sprintf("record on line %d: problem setting value %s on field %s: %v", e.Line, e.Value, e.FieldName, e.Err)
 }
 
 func (e SetValueError) Unwrap() error { return e.Err }
