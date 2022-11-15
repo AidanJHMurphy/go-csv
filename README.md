@@ -1,6 +1,8 @@
 # go-csv
 This project defines a csv struct decorator tag, and wraper for the base csv package that can understand and use the tag in order to more easily parse csv data.
 
+To use, import this module into your code with "github.com/AidanJHMurphy/go-csv"
+
 ## How to decorate a struct with the csv tag
 
 If your csv file uses a header, define the mapping with the header attribute. For example, given the following struct definition:
@@ -9,7 +11,7 @@ If your csv file uses a header, define the mapping with the header attribute. Fo
 type csvWithHeader struct {
 	Field1       string `csv:"header:field1Header"`
 	Field2       int    `csv:"header:field2Header"`
-	Field3       int    `csv:"header:Field3Header"`
+	Field3       int    `csv:"header:field3Header"`
 }
 ```
 
@@ -137,7 +139,13 @@ Once you have done that, read the csv data into your struct.
 Here is an example with headers:
 
 ```
+package main
+
 import (
+	"fmt"
+	"io"
+	"strings"
+
 	csv "github.com/AidanJHMurphy/go-csv"
 )
 
@@ -145,31 +153,33 @@ const csvWithHeaderData = `field1Header,ignoredColumn,field3Header,field2Header
 value1,thisIsUnusedData,3,2`
 
 type csvWithHeader struct {
-	Field1       string `csv:"header:field1Header"`
-	Field2       int    `csv:"header:field2Header"`
-	Field3       int    `csv:"header:Field3Header"`
+	Field1 string `csv:"header:field1Header"`
+	Field2 int    `csv:"header:field2Header"`
+	Field3 int    `csv:"header:field3Header"`
 }
 
 func main() {
-  p := csv.NewParser(strings.NewReader(csvWithHeaderData), ParserOptions{}))
-    
-  err := p.ParseHeader(&csvWithIndex{})
+	p := csv.NewParser(strings.NewReader(csvWithHeaderData), csv.ParserOptions{})
+
+	err := p.ParseHeader(&csvWithHeader{})
 	if err != nil {
-		t.Errorf("encountered error parsing csv header: %v", err)
+		fmt.Printf("encountered error parsing csv header: %v", err)
 	}
-  
-  for {
-    data := csvWithHeader{}
-    err := p.ReadRecord(&data)
-    if err == io.EOF {
+
+	for {
+		data := csvWithHeader{}
+		err := p.ReadRecord(&data)
+		if err == io.EOF {
 			break
 		}
-    
-    if err != nil {
-			t.Errorf("encountered error parsing csv with header: %v", err)
+
+		if err != nil {
+			fmt.Printf("encountered error parsing csv without header: %v", err)
 			break
 		}
-  }
+
+		fmt.Printf("%v\n", data)
+	}
 }
 ```
 
@@ -177,7 +187,13 @@ Here is an example without headers:
 
 
 ```
+package main
+
 import (
+	"fmt"
+	"io"
+	"strings"
+
 	csv "github.com/AidanJHMurphy/go-csv"
 )
 
@@ -190,19 +206,21 @@ type csvWithoutHeader struct {
 }
 
 func main() {
-  p := NewParser(strings.NewReader(csvWithoutHeaderData), ParserOptions{}))
-  
-  for {
-    data := csvWithoutHeader{}
-    err := p.ReadRecord(&data)
-    if err == io.EOF {
+	p := csv.NewParser(strings.NewReader(csvWithoutHeaderData), csv.ParserOptions{})
+
+	for {
+		data := csvWithoutHeader{}
+		err := p.ReadRecord(&data)
+		if err == io.EOF {
 			break
 		}
-    
-    if err != nil {
-			t.Errorf("encountered error parsing csv with header: %v", err)
+
+		if err != nil {
+			fmt.Printf("encountered error parsing csv with header: %v", err)
 			break
 		}
-  }
+
+		fmt.Printf("%v\n", data)
+	}
 }
 ```
